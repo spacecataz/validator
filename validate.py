@@ -220,6 +220,7 @@ class BinaryEventTable(object):
     dropped from the calculation altogether (i.e., the number of windows
     evaluated is reduced by one).  If either *Mod* and *Obs* are masked 
     arrays, masked values are removed.
+
     '''
 
     from numpy import nan
@@ -239,7 +240,13 @@ class BinaryEventTable(object):
          self.table[key] = value
 
     def __iadd__(self, table):
-
+        '''
+        Add two tables together, combining hits and misses such that 
+        the resulting metrics and skill scores reflect an analysis
+        using a broad data range (as opposed to, e.g., just averaging 
+        two Heidke skill scores togther).
+        '''
+        
         from numpy import append
         
         # Only add to similar objects:
@@ -276,7 +283,11 @@ class BinaryEventTable(object):
         self['trueN']  += table['trueN']
 
         self['n'] += table['n']
-        
+
+        # Append epoch lists:
+        for category in ['hit', 'miss', 'falseP', 'trueN']:
+            self.epochs[category] += table.epochs[category]
+
         # Update letter-designated values:
         self['a'], self['b'] = self['hit'],  self['falseP']
         self['c'], self['d'] = self['miss'], self['trueN']
@@ -341,12 +352,12 @@ class BinaryEventTable(object):
         time = [winstart+i*window for i in range(int(nTime))]
         
         # Store these values in the object.
-        self.Obs, self.tObs = Obs, tObs
-        self.Mod, self.tMod = Mod, tMod
-        self.window = window
+        self.Obs, self.tObs  = Obs, tObs
+        self.Mod, self.tMod  = Mod, tMod
+        self.window          = window
         self.start, self.end = winstart, winend
-        self.nWindow = nWindow
-        self.threshold = cutoff
+        self.nWindow         = nWindow
+        self.threshold       = cutoff
 
         # Convert data to binary format: +1 for above or equal to threshold,
         # -1 for below threshold.  
@@ -361,9 +372,13 @@ class BinaryEventTable(object):
         table = {'hit':0., 'miss':0., 'falseP':0., 'trueN':0., 'n':0.}
         result={3:'hit', 1:'miss', -1:'falseP', -3:'trueN'}
 
+        # Create dictionary to store epochs for each
+        # event type (i.e., the time for each "hit", etc.)
+        self.epochs = {'hit':[], 'miss':[], 'falseP':[], 'trueN':[]}
+        
         # Perform binary analysis.
         for i in range(nWindow):
-            #print('Searching from {} to {}'.format(time[i], time[i+1]))
+            # print('Searching from {} to {}'.format(time[i], time[i+1]))
             # Get points inside window:
             subObs = Obs[(tObs>=time[i]) & (tObs<time[i+1])]
             subMod = Mod[(tMod>=time[i]) & (tMod<time[i+1])]
@@ -377,6 +392,10 @@ class BinaryEventTable(object):
             val = 2*int(subObs.max()) + int(subMod.max())
             table[result[val]] += 1
             table['n'] += 1
+
+            # Save the current epoch into the epoch dictionary.
+            self.epochs[results[val]].append(time[i])
+            
             #print('{} from {} to {}'.format(result[val],time[i], time[i+1]))
             
         # For convenience, use the definitions from Jolliffe and Stephenson.
@@ -397,6 +416,8 @@ class BinaryEventTable(object):
 
         If kwarg *units* is provided, add units to the threshold value
         in the table caption.
+
+        
         '''
         
         table = r'''
