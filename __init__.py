@@ -221,6 +221,36 @@ class BinaryEventTable(object):
     evaluated is reduced by one).  If either *Mod* and *Obs* are masked 
     arrays, masked values are removed.
 
+
+    Parameters
+    ==========
+    tObs : array-like
+       List or array of :class:`datetime.datetime` objects corresponding
+       to the observed values.
+
+    obs : array-like
+       List or numpy array of observed values.
+
+    tMod : array-like
+       Same as tObs, but for the model/forecast times.
+
+    Mod : array-like
+       Same as Obs, but for model/forecast values.
+
+    cutoff : real
+       Threshold for value to be counted as an event.
+
+    window : real
+       Size of time window in seconds.
+
+    Other Parameters
+    ================
+    None
+
+    Examples
+    ========
+
+
     '''
 
     from numpy import nan
