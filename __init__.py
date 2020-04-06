@@ -424,7 +424,7 @@ class BinaryEventTable(object):
             table['n'] += 1
 
             # Save the current epoch into the epoch dictionary.
-            self.epochs[results[val]].append(time[i])
+            self.epochs[result[val]].append(time[i])
             
             #print('{} from {} to {}'.format(result[val],time[i], time[i+1]))
             
