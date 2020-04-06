@@ -253,6 +253,20 @@ class BinaryEventTable(object):
     Examples
     ========
 
+    >>> import datetime as dt
+    >>> import numpy as np
+    >>> import validator as vd
+    >>> # Simple time arrays:
+    >>> start = dt.datetime(2000,1,1,12,0,0)
+    >>> t_obs = np.array([start + dt.timedelta(minutes=4*x) for x in range(15)])
+    >>> t_mod = np.array([start + dt.timedelta(minutes=4*x+2) for x in range(15)])
+    >>> # Simple yes/no data:
+    >>> d_obs = np.zeros( t_obs.size )
+    >>> d_mod = np.zeros( t_obs.size )
+    >>> d_obs[::2] = 1. # every other one is true.
+    >>> d_mod[::4] = 1. # every forth one is true.     
+    >>> # Binary event table for dummy data:
+    >>> t1 = vd.BinaryEventTable(t_obs, d_obs, t_mod, d_mod, .5, 300)
 
     '''
 
@@ -458,8 +472,6 @@ class BinaryEventTable(object):
 
         If kwarg *units* is provided, add units to the threshold value
         in the table caption.
-
-        
         '''
         
         table = r'''
@@ -505,7 +517,46 @@ class BinaryEventTable(object):
         '''
         pass
 
+    def calc_s(self):
+        '''
+        Calculate and return the base rate, which is a sample estimate
+        of the marginal probability of the event occurring.
+        '''
+        return (self['a']+self['c'])/self['n']
 
+    def calc_r(self):
+        '''
+        Calculate and return the forecast rate, which is a sample estimate
+        of the marginal probability of the event being forecast.
+        '''
+        return (self['a']+self['b'])/self['n']
+
+    def calc_B(self):
+        '''
+        Calculate frequency bias, or the ratio of the number of forecasts 
+        of occurrence to the number of actual occurrences.  Results range
+        from [0,$\inf$]; naive of economic and forecast goals, a value of 1 
+        is desireable.
+        This is sometimes referred to as just "bias", though it is not a
+        true measure of forecast bias in the traditional sense.
+        '''
+        return self.calc_r()/self.calc_s()
+        
+    def calc_ar(self):
+        '''
+        Calculate and return a$_r$, which is the expected "a" (number of hits)
+        for a random forecast with the same base rate and forecast rate.
+        '''
+        return (self['a']+self['b'])*(self['a']+self['c'])/self['n']
+
+    def calc_dr(self):
+        '''
+        Calculate and return d$_r$, which is the expected "d" (number of 
+        true negatives) for a random forecast with the same base and forecast
+        rate.
+        '''
+        return (self['b']+self['d'])*(self['c']+self['d'])/self['n']
+        
     def calc_PC(self):
         '''
         Calculate and return Proportion Correct, or, the proportion of
@@ -529,19 +580,19 @@ class BinaryEventTable(object):
 
     def calc_FARate(self):
         '''
-        Calculate False Alarm Rate, also known as probability of false
-        detection, definded as "False Positives" divided by "False Positives"
-        plus "True Negatives".  It is the proportion of non-events
-        incorrectly forecasted as events.
+        Calculate False Alarm Rate, also known as Probability of False
+        Detection (POFD), definded as "False Positives" divided by 
+        "False Positives" plus "True Negatives".  It is the proportion of 
+        the total non-events incorrectly forecasted as events.
         '''
 
         from numpy import nan
         
-        if (self['b']+self['d']) > 0:
-            return self['b']/(self['b']+self['d'])
+        if (self['falseP']+self['trueN']) > 0:
+            return self['falseP']/(self['falseP']+self['trueN'])
         else:
             return nan
-
+        
     def calc_PCE(self):
         '''
         Calculate and return the Proportion Correct for a random 
