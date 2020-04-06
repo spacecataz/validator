@@ -121,8 +121,10 @@ class TestBinaryEventTable(unittest.TestCase):
         # Values from SWMF-SWPC test using Event 1 Ottawa station.
         obs = read_mag(self.pth+'/data/ott_obs.txt')
         mod = read_mag(self.pth+'/data/ott_mod.txt')
+        tlim = [dt.datetime(2003,10,29,6,0,0), dt.datetime(2003,10,30,6,0,0)]
         self.t2 = vd.BinaryEventTable(obs['time'][:-1], obs['dBdt'],
-                                      mod['time'][:-1], mod['dBdt'], .3, 60*20)
+                                      mod['time'][:-1], mod['dBdt'], .3, 60*20,
+                                      trange=tlim)
         # This fails, need to restrict time: '2003_Oct29_0600-Oct30_0600'
         
     def test_hitmiss(self):

@@ -245,7 +245,10 @@ class BinaryEventTable(object):
 
     Other Parameters
     ================
-    None
+    trange : 2-element list-like of datetime objects
+       Restricts the start and stop time of binning to the first and
+       last element of *trange*.  Default is to generate the time range
+       of the min and max times of *tMod* and *tObs*.
 
     Examples
     ========
@@ -324,14 +327,15 @@ class BinaryEventTable(object):
         
         return self
         
-    def __init__(self, tObs, Obs, tMod, Mod, cutoff, window):
+    def __init__(self, tObs, Obs, tMod, Mod, cutoff, window,
+                 trange=None):
         '''
         Build binary event table from scratch.
         '''
 
         from datetime import timedelta
-        
-        from numpy import array
+
+        from numpy import array, ndarray
         from numpy.ma.core import MaskedArray, bool_
         from numpy import min, max, ceil, where, zeros, logical_not
         from matplotlib.dates import date2num, num2date
@@ -357,10 +361,18 @@ class BinaryEventTable(object):
                 Mod = Mod.compressed()
                 tMod= tMod[mask]
 
+        # Build start and stop times for binning.  If not provided by
+        # "trange" kwarg, they must be built.
         # Using the start and stop time of the file, obtain the start and stop
         # times of our analysis (time rounded up/down according to *window*).
-        start = date2num(min([tObs.min(), tMod.min()]) )
-        end   = date2num(max([tObs.max(), tMod.max()]) )
+        if not trange:
+            start = date2num(min([tObs.min(), tMod.min()]) )
+            end   = date2num(max([tObs.max(), tMod.max()]) )
+        else:
+            if not isinstance(trange, (list, tuple, ndarray)):
+                raise TypeError(
+                    "trange must be two element list, tuple, or array")
+            start, end = date2num(trange[0]), date2num(trange[-1])
         dT    = window.total_seconds()
 
         # Offsets for start and end times to make time windows align
