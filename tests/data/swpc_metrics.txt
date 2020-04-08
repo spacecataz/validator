@@ -1,0 +1,44 @@
+These are reference metrics from the SWPCTEST validation suite corresponding
+to the Ottowa station magnetometer results as included in this folder.
+Metrics were computed using Gabor Toth's "predict.pro" IDL procedure.
+
+First group is |dB_H/dt| (where "db" values are dB/dt obtained through
+empirical relation); second group is |B_H| metrics.
+
+Stations used =  ott
+Events used =  Event1
+Deltat, threshold =       20.0000     0.300000
+Results total dbdt: pod, pof, hss=  0.9714  0.0000  0.6538
+Results total db  : pod, pof, hss=  0.9857  1.0000 -0.0189
+Stations used =  ott
+Events used =  Event1
+Deltat, threshold =       20.0000     0.700000
+Results total dbdt: pod, pof, hss=  0.8636  0.3333  0.3465
+Results total db  : pod, pof, hss=  0.9242  0.1667  0.5814
+Stations used =  ott
+Events used =  Event1
+Deltat, threshold =       20.0000      1.10000
+Results total dbdt: pod, pof, hss=  0.6034  0.2143  0.2524
+Results total db  : pod, pof, hss=  0.8793  0.1429  0.6486
+Stations used =  ott
+Events used =  Event1
+Deltat, threshold =       20.0000      1.50000
+Results total dbdt: pod, pof, hss=  0.4468  0.2800  0.1416
+Results total db  : pod, pof, hss=  0.6596  0.4400  0.2098
+
+Stations used =  ott
+Events used =  Event1
+Deltat, threshold =       20.0000      101.600
+Results total db  : pod, pof, hss=  0.9859  1.0000 -0.0141
+Stations used =  ott
+Events used =  Event1
+Deltat, threshold =       20.0000      213.600
+Results total db  : pod, pof, hss=  0.8444  0.8889 -0.0508
+Stations used =  ott
+Events used =  Event1
+Deltat, threshold =       20.0000      317.500
+Results total db  : pod, pof, hss=  0.8158  0.6471  0.1727
+Stations used =  ott
+Events used =  Event1
+Deltat, threshold =       20.0000      416.700
+Results total db  : pod, pof, hss=  0.6333  0.5476  0.0811
