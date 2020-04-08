@@ -208,18 +208,50 @@ class BinaryEventTable(object):
 
     Time windows are handled so that the start of the window is inclusive
     while the end of the window is exclusive (i.e., [winStart, winStop) ).
-    The start and stop times of windows are not relative to the start/stop
+    The start and stop times of windows are not the exact start/stop
     times of the data but relative to universal time.  For example, if your data
     starts at 5:24UT but a 20 minute time window is selected, the first window
     will start at 5:20, the second at 5:40, etc. until every data point
     (from both model and observations) lies in a window.  If any time window
-    is devoid of model and/or observation data, it is ignored.
+    is devoid of model and/or observation data, it is discarded.
+
+    The default behavior is that the time windows are created to span the
+    entire period covered by the data and model.  However, this can be 
+    over-ridden using the *trange* keyword argument.  If set to a two-element
+    list/tuple/array of datetimes, the time windows will span 
+    [trange[0], trange[1]) -- i.e., the final time window will go up to
+    but not include trange[1].
 
     This class is fairly robust in that it can handle several non-standard
     situations.  Data gaps spanning a width greater than *window* are 
     dropped from the calculation altogether (i.e., the number of windows
     evaluated is reduced by one).  If either *Mod* and *Obs* are masked 
     arrays, masked values are removed.
+
+    The returned object stores information in its attributes. 
+    The counts for each category (hit, miss, etc.) can be accessed using
+    dictionary-like syntax.  Values can be dereferenced by using either their
+    name or letter designations following Jollife & Stephenson:
+    
+    | Name     | Letter | Meaning         |
+    |----------|:------:|-----------------|
+    | 'hit'    |   a    | Hits            |
+    | 'falseP' |   b    | False positives |
+    | 'miss'   |   c    | Misses          |
+    | 'trueN'  |   d    | True negatives  |
+    | 'n'      |   n    | Total windows   |
+
+    Other information is stored in object attributes:
+
+    | Attribute | Use/Meaning                                               |
+    |-----------|-----------------------------------------------------------|
+    | trange    | The period covered, end exclusive [start, stop).          |
+    | epochs    | A list of window starting times for every hit, miss, etc. |
+    | nWindow   | Number of windows used.                                   |
+    | Obs, Mod  | The raw observed, model data used.                        |
+    | tObs,tMod | The raw time corresponding to Obs, Mod.                   |
+    | threshold | The event threshold value.                                |
+    | window    | A datetime.timedelta of the window size.                  |
 
 
     Parameters
@@ -281,10 +313,10 @@ class BinaryEventTable(object):
                                                                      self['d'])
 
     def __getitem__(self, key):
-        return self.table[key]
+        return self.counts[key]
 
     def __setitem__(self, key, value):
-         self.table[key] = value
+         self.counts[key] = value
 
     def __iadd__(self, table):
         '''
@@ -320,8 +352,8 @@ class BinaryEventTable(object):
 
         # Combine timings:
         self.nWindow += table.nWindow
-        self.start = min(self.start, table.start)
-        self.end   = min(self.end,   table.end)
+        self.trange[0] = min(self.trange[0], table.trange[0])
+        self.trange[1] = min(self.trange[1], table.trange[1])
 
         # Combine hits/misses/etc.
         self['hit']    += table['hit']
@@ -379,24 +411,33 @@ class BinaryEventTable(object):
         # "trange" kwarg, they must be built.
         # Using the start and stop time of the file, obtain the start and stop
         # times of our analysis (time rounded up/down according to *window*).
+        # DoInclusive sets if the last window is inclusive/exclusive
+        # (i.e., mathematical [start,end] vs. [start,end) behavior.)
         if not trange:
             start = date2num(min([tObs.min(), tMod.min()]) )
             end   = date2num(max([tObs.max(), tMod.max()]) )
+            DoInclusive=True
         else:
             if not isinstance(trange, (list, tuple, ndarray)):
                 raise TypeError(
                     "trange must be two element list, tuple, or array")
             start, end = date2num(trange[0]), date2num(trange[-1])
+            DoInclusive=False
         dT    = window.total_seconds()
 
+        # Now, adjust start and end such that they begin on round number
+        # times- for example, if the time window is 5 minutes, and the
+        # raw start time is 6:02 UT, the first window should start at 6:00UT.
         # Offsets for start and end times to make time windows align
         # correctly.  Round to nearest second to avoid precision issues.
         start_offset = timedelta(seconds = round(start*24*3600)%dT)
-        end_offset   = timedelta(seconds = round(start*24*3600)%dT) + window
+        end_offset   = timedelta(seconds = round(end*24*3600)%dT  )# \
+                                           #+ DoInclusive*window
 
         # Generate start and stop time.
         winstart = (num2date(start) - start_offset).replace(tzinfo=None)
-        winend   = (num2date(end)   + end_offset  ).replace(tzinfo=None)
+        winend   = (num2date(end)   - end_offset  ).replace(tzinfo=None) + \
+                                                    DoInclusive*window
 
         # With start and stop times, create window information.
         nWindow = int(ceil( (date2num(winend)-date2num(winstart)) \
@@ -411,7 +452,7 @@ class BinaryEventTable(object):
         self.Obs, self.tObs  = Obs, tObs
         self.Mod, self.tMod  = Mod, tMod
         self.window          = window
-        self.start, self.end = winstart, winend
+        self.trange          = [winstart, winend]
         self.nWindow         = nWindow
         self.threshold       = cutoff
 
@@ -459,8 +500,8 @@ class BinaryEventTable(object):
         table['c'], table['d'] = table['miss'], table['trueN']
 
         # Place results into object.
-        self.table=table
-        self.n    =table['n']
+        self.counts=table
+        self.n     =table['n']
 
     def latex_table(self, value='values', units=''):
         '''
@@ -490,7 +531,7 @@ class BinaryEventTable(object):
         No    & {c:.0f}  &  {d:.0f} \\\\
         \\hline
         Total & {n:.0f}\\\\
-            '''.format(**self.table)
+            '''.format(**self.counts)
 
         table+=r'''
         \end{tabular}
