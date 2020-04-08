@@ -92,11 +92,13 @@ class TestBinaryEventTable(unittest.TestCase):
     #### "Answers" ####
     # Binary event categorization counts:
     knownCount1 = {'falseP': 1,'hit': 3,'miss':5,'n': 12,'trueN': 3}
-    knownCount2 = {'falseP': 1,'hit': 3,'miss':5,'n': 12,'trueN': 3}
+    knownCount2 = {'falseP': 0,'hit':68,'miss':2,'n': 72,'trueN': 2}
 
     # Calculations:
-    knownCalcs1 = {'s':2./3., 'r':4/12, 'B':.5, 'ar':2+2/3, 'dr':2+2/3,
+    knownCalcs1 = {'s':2./3., 'r':4/12, 'B':.5,  'ar':2+2/3, 'dr':2+2/3,
                    'PC':.5, 'HR':.375, 'FARate':.25, 'HSS':.1}
+    knownCalcs2 = {'s':.97222,'r':.9444,'B':.971,'ar':66.111,'dr':.111111,
+                   'PC':.9722,'HR':.9714,'FARate':0.0, 'HSS':.65384}
     
     def setUp(self):
         '''
@@ -141,28 +143,37 @@ class TestBinaryEventTable(unittest.TestCase):
         for v in self.varnames:
             self.assertEqual(self.knownCount1[v], self.t1[v])
 
-        #for v in self.varnames:
-        #    self.assertEqual(self.knownCount2[v], self.t2[v])
+        for v in self.varnames:
+            self.assertEqual(self.knownCount2[v], self.t2[v])
 
     # Test calculations:
     def test_calcs(self):
-        self.assertEqual(self.knownCalcs1['s'],      self.t1.calc_s())
+        self.assertEqual(self.knownCalcs1['s'],       self.t1.calc_s())
+        self.assertAlmostEqual(self.knownCalcs2['s'], self.t2.calc_s(), 4)
     def test_calcr(self):
-        self.assertEqual(self.knownCalcs1['r'],      self.t1.calc_r())
+        self.assertEqual(self.knownCalcs1['r'],       self.t1.calc_r())
+        self.assertAlmostEqual(self.knownCalcs2['r'], self.t2.calc_r(), 4)
     def test_calcB(self):
-        self.assertEqual(self.knownCalcs1['B'],      self.t1.calc_B())        
+        self.assertEqual(self.knownCalcs1['B'],       self.t1.calc_B())
+        self.assertAlmostEqual(self.knownCalcs2['B'], self.t2.calc_B(), 3)
     def test_calcar(self):
-        self.assertEqual(self.knownCalcs1['ar'],     self.t1.calc_ar())
+        self.assertEqual(self.knownCalcs1['ar'],      self.t1.calc_ar())
+        self.assertAlmostEqual(self.knownCalcs2['ar'],self.t2.calc_ar(), 3)
     def test_calcdr(self):
-        self.assertEqual(self.knownCalcs1['dr'],     self.t1.calc_dr())
+        self.assertEqual(self.knownCalcs1['dr'],      self.t1.calc_dr())
+        self.assertAlmostEqual(self.knownCalcs2['dr'],self.t2.calc_dr(), 6)
     def test_calcPC(self):
-        self.assertEqual(self.knownCalcs1['PC'],     self.t1.calc_PC())
+        self.assertEqual(self.knownCalcs1['PC'],      self.t1.calc_PC())
+        self.assertAlmostEqual(self.knownCalcs2['PC'],self.t2.calc_PC(), 4)
     def test_calcHR(self):
-        self.assertEqual(self.knownCalcs1['HR'],     self.t1.calc_HR())
+        self.assertEqual(self.knownCalcs1['HR'],      self.t1.calc_HR())
+        self.assertAlmostEqual(self.knownCalcs2['HR'],self.t2.calc_HR(), 4)
     def test_calcFARate(self):
-        self.assertEqual(self.knownCalcs1['FARate'], self.t1.calc_FARate())
+        self.assertEqual(self.knownCalcs1['FARate'],      self.t1.calc_FARate())
+        self.assertAlmostEqual(self.knownCalcs2['FARate'],self.t2.calc_FARate())
     def test_calcHSS(self):
         self.assertAlmostEqual(self.knownCalcs1['HSS'], self.t1.calc_heidke())
+        self.assertAlmostEqual(self.knownCalcs2['HSS'], self.t2.calc_heidke(),4)
         
 if __name__=='__main__':
     unittest.main()
