@@ -251,7 +251,7 @@ class BinaryEventTable(object):
     | 'trueN'  |   d    | True negatives  |
     | 'n'      |   n    | Total windows   |
 
-    Other information is stored in object attributes:
+    Expanded information is stored in object attributes:
 
     | Attribute | Use/Meaning                                               |
     |-----------|-----------------------------------------------------------|
@@ -263,6 +263,14 @@ class BinaryEventTable(object):
     | threshold | The event threshold value.                                |
     | window    | A datetime.timedelta of the window size.                  |
 
+    Finally, critical timeseries are stored as follows:
+
+    | Attribute | Use/Meaning                                               |
+    |-----------|-----------------------------------------------------------|
+    | time      | An array of datetimes at bin centers.                     |
+    | obsmax    | An array of max observed values for each bin.             |
+    | modmax    | An array of max predicted/modeled values for each bin.    |
+    | bool      | An array of booleans indicating event/non-event per bin.  |
 
     Parameters
     ==========
@@ -401,13 +409,13 @@ class BinaryEventTable(object):
             window = timedelta(seconds=window)
 
         # If list type data, convert to numpy arrays:
-        if type(tObs) == list:
+        if type(tObs) is list:
             tObs = array(tObs)
-        if type(tMod) == list:
+        if type(tMod) is list:
             tMod = array(tMod)
-        if type(Obs) == list:
+        if type(Obs) is list:
             Obs = array(Obs)
-        if type(Mod) == list:
+        if type(Mod) is list:
             Mod = array(Mod)
 
         # If handed masked arrays, collapse them to remove bad data.
@@ -460,6 +468,7 @@ class BinaryEventTable(object):
 
         # Create boundaries of time windows.
         time = [winstart+i*window for i in range(int(nTime))]
+        self.time = time + timedelta(seconds=int(dT/2))
 
         # Store these values in the object.
         self.Obs, self.tObs = Obs, tObs
@@ -468,6 +477,12 @@ class BinaryEventTable(object):
         self.trange = [winstart, winend]
         self.nWindow = nWindow
         self.threshold = cutoff
+
+        # Create timeseries arrays:
+        self.time = zeros(self.nWindow, dtype=object)
+        self.obsmax = zeros(self.nWindow)
+        self.modmax = zeros(self.nWindow)
+        self.bool = zeros(self.nWindow, dtype=bool)
 
         # Convert data to binary format: +1 for above or equal to threshold,
         # -1 for below threshold.
@@ -490,13 +505,20 @@ class BinaryEventTable(object):
         for i in range(nWindow):
             # print('Searching from {} to {}'.format(time[i], time[i+1]))
             # Get points inside window:
-            subObs = Obs[(tObs >= time[i]) & (tObs < time[i+1])]
-            subMod = Mod[(tMod >= time[i]) & (tMod < time[i+1])]
+            obs_loc = (tObs >= time[i]) & (tObs < time[i+1])
+            mod_loc = (tMod >= time[i]) & (tMod < time[i+1])
+            subObs = Obs[obs_loc]
+            subMod = Mod[mod_loc]
 
             # No points?  No metric!
             if not subObs.size*subMod.size:
                 # print('NO RESULT from {} to {}'.format(time[i], time[i+1]))
                 continue
+
+            # Store timeseries information:
+            self.obsmax[i] = self.Obs[obs_loc].max()
+            self.modmax[i] = self.Mod[mod_loc].max()
+            self.bool[i] = self.modmax[i] >= cutoff
 
             # Determine contigency result and increment it.
             val = 2*int(subObs.max()) + int(subMod.max())
