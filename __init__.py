@@ -5,12 +5,14 @@ A module containing data-model validation tools.
 
 import unittest
 
-######################### METRICS #########################
+# ------------------- METRICS --------------------------
+
+
 def bias(o, m):
     '''
     For paired data arrays o (observed) and m (model), calculate the
-    bias or mean systematic error.  See Jolliffe and Stephenson, Chapter 5, 
-    page 99 for details.  
+    bias or mean systematic error.  See Jolliffe and Stephenson, Chapter 5,
+    page 99 for details.
 
     A positive bias indicates that the model is consistently overpredicting
     the observations; a negative value indicates underprediction.
@@ -23,15 +25,16 @@ def bias(o, m):
     assert o.size == m.size,   'Input arrays must have same size!'
 
     return nansum( m - o )/m.size
-    
+
+
 def mse(o, m):
     '''
-    For paired data arrays o (observed) and m (model), calculate the 
-    mean squared error.  
+    For paired data arrays o (observed) and m (model), calculate the
+    mean squared error.
     It is a popular metric and can be found easily in review literature.
 
     Both arguments must be numpy arrays of the same shape with the
-    same number of values.  
+    same number of values.
 
     '''
 
@@ -42,18 +45,19 @@ def mse(o, m):
     assert o.size == m.size,   'Input arrays must have same size!'
 
     mse = nansum((o-m)**2.0)/o.size
-    
+
     return mse
+
 
 def rmse(o, m):
     '''
-    For paired data arrays o (observed) and m (model), calculate the 
+    For paired data arrays o (observed) and m (model), calculate the
     root mean squared error (the square root of MSE.)  The units of the
     returned value is the same as the input units.
     It is a popular metric and can be found easily in review literature.
 
     Both arguments must be numpy arrays of the same shape with the
-    same number of values.  
+    same number of values.
 
     '''
 
@@ -64,8 +68,9 @@ def rmse(o, m):
     assert o.size == m.size,   'Input arrays must have same size!'
 
     rmse = sqrt(mse(o, m))
-    
+
     return rmse
+
 
 def nrmse(o, m, factor=None):
     '''
@@ -80,19 +85,20 @@ def nrmse(o, m, factor=None):
     '''
 
     from numpy import nanmin, nanmax
-    
+
     # Check input values.
     assert o.shape == m.shape, 'Input arrays must have same shape!'
     assert o.size == m.size,   'Input arrays must have same size!'
-    
+
     if not factor:
         factor = (nanmax(o)-nanmin(o))
 
     return rmse(o, m)/factor
 
-def nrmse_old(o, m):           # 
+
+def nrmse_old(o, m):
     '''
-    For paired data arrays o (observed) and m (model), calculate the 
+    For paired data arrays o (observed) and m (model), calculate the
     normalised root-mean-squared error.  The resulting value is zero for
     a perfect prediction and infinity for an infinitely bad prediction.
     A score of 1 means that the model has the same predictive power
@@ -100,7 +106,7 @@ def nrmse_old(o, m):           #
     observations.
 
     Both arguments must be numpy arrays of the same shape with the
-    same number of values.  
+    same number of values.
 
     This value is described in detail by Welling and Ridley, 2010.
     '''
@@ -111,9 +117,10 @@ def nrmse_old(o, m):           #
     assert o.shape == m.shape, 'Input arrays must have same shape!'
     assert o.size == m.size,   'Input arrays must have same size!'
 
-    nrmse = sqrt( sum((o-m)**2.0) / sum(o**2.0) )
-    
+    nrmse = sqrt(sum((o-m)**2.0) / sum(o**2.0))
+
     return nrmse
+
 
 def p_corr(o, m):
     '''
@@ -121,12 +128,12 @@ def p_corr(o, m):
     the Pearson correlation coefficient.  Note that this function is
     just a convenience wrapper for the Scipy function that does the same.
 
-    Pearson correlation coefficient is a well documented value that is 
+    Pearson correlation coefficient is a well documented value that is
     easily found in the literature.  A value of zero implies no correlation
     between the data and the model.  A value of [-]1 implies perfect
     [anti-]correlation.
     '''
-    
+
     from scipy.stats import pearsonr
 
     # Check input values.
@@ -135,8 +142,9 @@ def p_corr(o, m):
         'Input arrays must be vectors!'
 
     r = pearsonr(o, m)
-    
+
     return r[0]
+
 
 def predicteff(o, m):
     '''
@@ -145,7 +153,7 @@ def predicteff(o, m):
     defined as 1 - (MSE/theta**2) where MSE is the Mean Square Error
     and theta**2 is the variance of the observations.  A value of 1
     indicates a perfect forecast.
-    
+
     For more information, see
     http://www.swpc.noaa.gov/forecast_verification/Glossary.html#skill
     '''
@@ -158,14 +166,15 @@ def predicteff(o, m):
         'Input arrays must be vectors!'
 
     var  = variance(o)
-    peff = 1.0 - mse(o,m)/var 
-    
+    peff = 1.0 - mse(o,m)/var
+
     return peff
+
 
 def pairtimeseries_linear(time1, data, time2, **kwargs):
     '''
     Use linear interpolation to pair two timeseries of data.  Data set 1
-    (data) with time t1 will be interpolated to match time set 2 (t2). 
+    (data) with time t1 will be interpolated to match time set 2 (t2).
     The returned values, d3, will be data set 1 at time 2.
     No extrapolation will be done; t2's boundaries should encompass those of
     t1.
@@ -174,7 +183,7 @@ def pairtimeseries_linear(time1, data, time2, **kwargs):
     values will not be considered.
 
     **kwargs** will be handed to scipy.interpolate.interp1d
-    A common option is to set fill_value='extrapolate' to prevent 
+    A common option is to set fill_value='extrapolate' to prevent
     bounds errors.
     '''
 
@@ -198,6 +207,7 @@ def pairtimeseries_linear(time1, data, time2, **kwargs):
     func=interp1d(t1, d, **kwargs)
     return func(t2)
 
+
 class BinaryEventTable(object):
     '''
     For two unpaired timeseries, observations *Obs* with datetimes *tObs*,
@@ -209,30 +219,30 @@ class BinaryEventTable(object):
     Time windows are handled so that the start of the window is inclusive
     while the end of the window is exclusive (i.e., [winStart, winStop) ).
     The start and stop times of windows are not the exact start/stop
-    times of the data but relative to universal time.  For example, if your data
-    starts at 5:24UT but a 20 minute time window is selected, the first window
-    will start at 5:20, the second at 5:40, etc. until every data point
+    times of the data but relative to universal time.  For example, if your
+    data starts at 5:24UT but a 20 minute time window is selected, the first
+    window will start at 5:20, the second at 5:40, etc. until every data point
     (from both model and observations) lies in a window.  If any time window
     is devoid of model and/or observation data, it is discarded.
 
     The default behavior is that the time windows are created to span the
-    entire period covered by the data and model.  However, this can be 
+    entire period covered by the data and model.  However, this can be
     over-ridden using the *trange* keyword argument.  If set to a two-element
-    list/tuple/array of datetimes, the time windows will span 
+    list/tuple/array of datetimes, the time windows will span
     [trange[0], trange[1]) -- i.e., the final time window will go up to
     but not include trange[1].
 
     This class is fairly robust in that it can handle several non-standard
-    situations.  Data gaps spanning a width greater than *window* are 
+    situations.  Data gaps spanning a width greater than *window* are
     dropped from the calculation altogether (i.e., the number of windows
-    evaluated is reduced by one).  If either *Mod* and *Obs* are masked 
+    evaluated is reduced by one).  If either *Mod* and *Obs* are masked
     arrays, masked values are removed.
 
-    The returned object stores information in its attributes. 
+    The returned object stores information in its attributes.
     The counts for each category (hit, miss, etc.) can be accessed using
     dictionary-like syntax.  Values can be dereferenced by using either their
     name or letter designations following Jollife & Stephenson:
-    
+
     | Name     | Letter | Meaning         |
     |----------|:------:|-----------------|
     | 'hit'    |   a    | Hits            |
@@ -296,38 +306,38 @@ class BinaryEventTable(object):
     >>> d_obs = np.zeros( t_obs.size )
     >>> d_mod = np.zeros( t_obs.size )
     >>> d_obs[::2] = 1. # every other one is true.
-    >>> d_mod[::4] = 1. # every forth one is true.     
+    >>> d_mod[::4] = 1. # every forth one is true.
     >>> # Binary event table for dummy data:
     >>> t1 = vd.BinaryEventTable(t_obs, d_obs, t_mod, d_mod, .5, 300)
 
     '''
 
     from numpy import nan
-    
+
     def __repr__(self):
         return 'Binary Event Table with {:.0f} entries'.format(self['n'])
 
     def __str__(self):
         return '{:.0f} hits, {:.0f} misses,'.format(self['a'], self['c']) + \
-            ' {:.0f} false positives, {:.0f} true negatives.'.format(self['b'], 
+            ' {:.0f} false positives, {:.0f} true negatives.'.format(self['b'],
                                                                      self['d'])
 
     def __getitem__(self, key):
         return self.counts[key]
 
     def __setitem__(self, key, value):
-         self.counts[key] = value
+        self.counts[key] = value
 
     def __iadd__(self, table):
         '''
-        Add two tables together, combining hits and misses such that 
+        Add two tables together, combining hits and misses such that
         the resulting metrics and skill scores reflect an analysis
-        using a broad data range (as opposed to, e.g., just averaging 
+        using a broad data range (as opposed to, e.g., just averaging
         two Heidke skill scores togther).
         '''
-        
+
         from numpy import append
-        
+
         # Only add to similar objects:
         if type(table) != type(self):
             raise TypeError(
@@ -339,14 +349,14 @@ class BinaryEventTable(object):
             raise ValueError("Threshold and window must be equivalent")
 
         # Ensure no overlapping times: DISABLED.
-        #if (self.start<table.end and self.start>=table.start) or \
+        # if (self.start<table.end and self.start>=table.start) or \
         #   (self.end>table.start and self.end<=table.end):
         #    raise ValueError(
         #        "Cannot add two temporally overlapping data sets in place.")
-        
+
         # Combine observations, predictions, and times:
-        self.Obs  = append(self.Obs,  table.Obs)
-        self.Mod  = append(self.Mod,  table.Mod)
+        self.Obs = append(self.Obs,  table.Obs)
+        self.Mod = append(self.Mod,  table.Mod)
         self.tObs = append(self.tObs, table.tObs)
         self.tMod = append(self.tMod, table.tMod)
 
@@ -356,10 +366,10 @@ class BinaryEventTable(object):
         self.trange[1] = min(self.trange[1], table.trange[1])
 
         # Combine hits/misses/etc.
-        self['hit']    += table['hit']
-        self['miss']   += table['miss']
+        self['hit'] += table['hit']
+        self['miss'] += table['miss']
         self['falseP'] += table['falseP']
-        self['trueN']  += table['trueN']
+        self['trueN'] += table['trueN']
 
         self['n'] += table['n']
 
@@ -370,9 +380,9 @@ class BinaryEventTable(object):
         # Update letter-designated values:
         self['a'], self['b'] = self['hit'],  self['falseP']
         self['c'], self['d'] = self['miss'], self['trueN']
-        
+
         return self
-        
+
     def __init__(self, tObs, Obs, tMod, Mod, cutoff, window,
                  trange=None):
         '''
@@ -387,25 +397,30 @@ class BinaryEventTable(object):
         from matplotlib.dates import date2num, num2date
 
         # If window not a time delta, assume it is seconds.
-        if type(window) != timedelta: window=timedelta(seconds=window)
-        
+        if type(window) is not timedelta:
+            window = timedelta(seconds=window)
+
         # If list type data, convert to numpy arrays:
-        if type(tObs)==list: tObs=array(tObs)
-        if type(tMod)==list: tMod=array(tMod)
-        if type(Obs) ==list: Obs =array(Obs)
-        if type(Mod) ==list: Mod =array(Mod)
+        if type(tObs) == list:
+            tObs = array(tObs)
+        if type(tMod) == list:
+            tMod = array(tMod)
+        if type(Obs) == list:
+            Obs = array(Obs)
+        if type(Mod) == list:
+            Mod = array(Mod)
 
         # If handed masked arrays, collapse them to remove bad data.
         if type(Obs) == MaskedArray:
-            if type(Obs.mask)!=bool_:
-                mask=logical_not(Obs.mask)
+            if type(Obs.mask) != bool_:
+                mask = logical_not(Obs.mask)
                 Obs = Obs.compressed()
-                tObs= tObs[mask]
+                tObs = tObs[mask]
         if type(Mod) == MaskedArray:
-            if type(Mod.mask)!=bool_:
-                mask=logical_not(Mod.mask)
+            if type(Mod.mask) != bool_:
+                mask = logical_not(Mod.mask)
                 Mod = Mod.compressed()
-                tMod= tMod[mask]
+                tMod = tMod[mask]
 
         # Build start and stop times for binning.  If not provided by
         # "trange" kwarg, they must be built.
@@ -414,75 +429,73 @@ class BinaryEventTable(object):
         # DoInclusive sets if the last window is inclusive/exclusive
         # (i.e., mathematical [start,end] vs. [start,end) behavior.)
         if not trange:
-            start = date2num(min([tObs.min(), tMod.min()]) )
-            end   = date2num(max([tObs.max(), tMod.max()]) )
-            DoInclusive=True
+            start = date2num(min([tObs.min(), tMod.min()]))
+            end = date2num(max([tObs.max(), tMod.max()]))
+            DoInclusive = True
         else:
             if not isinstance(trange, (list, tuple, ndarray)):
                 raise TypeError(
                     "trange must be two element list, tuple, or array")
             start, end = date2num(trange[0]), date2num(trange[-1])
-            DoInclusive=False
-        dT    = window.total_seconds()
+            DoInclusive = False
+        dT = window.total_seconds()
 
         # Now, adjust start and end such that they begin on round number
         # times- for example, if the time window is 5 minutes, and the
         # raw start time is 6:02 UT, the first window should start at 6:00UT.
         # Offsets for start and end times to make time windows align
         # correctly.  Round to nearest second to avoid precision issues.
-        start_offset = timedelta(seconds = round(start*24*3600)%dT)
-        end_offset   = timedelta(seconds = round(end*24*3600)%dT  )# \
-                                           #+ DoInclusive*window
+        start_offset = timedelta(seconds=round(start*24*3600) % dT)
+        end_offset = timedelta(seconds=round(end*24*3600) % dT)
 
         # Generate start and stop time.
         winstart = (num2date(start) - start_offset).replace(tzinfo=None)
-        winend   = (num2date(end)   - end_offset  ).replace(tzinfo=None) + \
-                                                    DoInclusive*window
+        winend = (num2date(end) - end_offset).replace(tzinfo=None) \
+            + DoInclusive*window
 
         # With start and stop times, create window information.
-        nWindow = int(ceil( (date2num(winend)-date2num(winstart)) \
-                            / (dT/3600./24.) ))
-        nTime    = nWindow+1
+        nWindow = int(ceil((date2num(winend)-date2num(winstart))
+                           / (dT/3600. / 24.)))
+        nTime = nWindow+1
 
-        
         # Create boundaries of time windows.
         time = [winstart+i*window for i in range(int(nTime))]
-        
+
         # Store these values in the object.
-        self.Obs, self.tObs  = Obs, tObs
-        self.Mod, self.tMod  = Mod, tMod
-        self.window          = window
-        self.trange          = [winstart, winend]
-        self.nWindow         = nWindow
-        self.threshold       = cutoff
+        self.Obs, self.tObs = Obs, tObs
+        self.Mod, self.tMod = Mod, tMod
+        self.window = window
+        self.trange = [winstart, winend]
+        self.nWindow = nWindow
+        self.threshold = cutoff
 
         # Convert data to binary format: +1 for above or equal to threshold,
-        # -1 for below threshold.  
+        # -1 for below threshold.
         # A "hit" is 2*Obs+Model=3.
         # A "true negative" is 2*Obs+Model=-3.
         # A "miss" is 2*Obs+Model=1.
         # A "false positive" is 2*Obs+Model=-1
-        Obs = where(Obs >= cutoff, 1,-1)
-        Mod = where(Mod >= cutoff, 1,-1)
-        
+        Obs = where(Obs >= cutoff, 1, -1)
+        Mod = where(Mod >= cutoff, 1, -1)
+
         # Create an empty table and a dictionary of keys:
         table = {'hit':0., 'miss':0., 'falseP':0., 'trueN':0., 'n':0.}
-        result={3:'hit', 1:'miss', -1:'falseP', -3:'trueN'}
+        result = {3:'hit', 1:'miss', -1:'falseP', -3:'trueN'}
 
         # Create dictionary to store epochs for each
         # event type (i.e., the time for each "hit", etc.)
         self.epochs = {'hit':[], 'miss':[], 'falseP':[], 'trueN':[]}
-        
+
         # Perform binary analysis.
         for i in range(nWindow):
             # print('Searching from {} to {}'.format(time[i], time[i+1]))
             # Get points inside window:
-            subObs = Obs[(tObs>=time[i]) & (tObs<time[i+1])]
-            subMod = Mod[(tMod>=time[i]) & (tMod<time[i+1])]
-            
+            subObs = Obs[(tObs >= time[i]) & (tObs < time[i+1])]
+            subMod = Mod[(tMod >= time[i]) & (tMod < time[i+1])]
+
             # No points?  No metric!
             if not subObs.size*subMod.size:
-                #print('NO RESULT from {} to {}'.format(time[i], time[i+1]))
+                # print('NO RESULT from {} to {}'.format(time[i], time[i+1]))
                 continue
 
             # Determine contigency result and increment it.
@@ -492,20 +505,20 @@ class BinaryEventTable(object):
 
             # Save the current epoch into the epoch dictionary.
             self.epochs[result[val]].append(time[i])
-            
-            #print('{} from {} to {}'.format(result[val],time[i], time[i+1]))
-            
+
+            # print('{} from {} to {}'.format(result[val],time[i], time[i+1]))
+
         # For convenience, use the definitions from Jolliffe and Stephenson.
         table['a'], table['b'] = table['hit'],  table['falseP']
         table['c'], table['d'] = table['miss'], table['trueN']
 
         # Place results into object.
-        self.counts=table
-        self.n     =table['n']
+        self.counts = table
+        self.n = table['n']
 
     def latex_table(self, value='values', units=''):
         '''
-        Return a string that, if printed into a LaTeX source file, 
+        Return a string that, if printed into a LaTeX source file,
         would yield the results in tabular format.
 
         The kwarg *value* should be set to the variable being investigated,
@@ -514,7 +527,7 @@ class BinaryEventTable(object):
         If kwarg *units* is provided, add units to the threshold value
         in the table caption.
         '''
-        
+
         table = r'''
         \begin{table}[ht]
         \centering
@@ -525,36 +538,36 @@ class BinaryEventTable(object):
         & Yes & No\\
         \hline
         '''
-        
-        table +='''
+
+        table += '''
         Yes   & {a:.0f}  &  {b:.0f} \\\\
         No    & {c:.0f}  &  {d:.0f} \\\\
         \\hline
         Total & {n:.0f}\\\\
             '''.format(**self.counts)
 
-        table+=r'''
+        table += r'''
         \end{tabular}
         \caption{
         '''
 
-        table+='''Binary event table for predicted {0} using a threshold of
+        table += '''Binary event table for predicted {0} using a threshold of
         {1.threshold:G}{2}.  Under these conditions, the model yielded a
-        Hit Rate of {3:05.3f}, a False Alarm Rate of {4:05.3f}, and a 
+        Hit Rate of {3:05.3f}, a False Alarm Rate of {4:05.3f}, and a
         Heidke Skill Score of {5:05.3f}.'''.format(
-            value, self, units, self.calc_HR(), 
+            value, self, units, self.calc_HR(),
             self.calc_FARate(), self.calc_heidke())
 
-        table+='''}
+        table += '''}
         \end{table}
         '''
 
         return table
 
-    def add_timeseries_plot(self, target=None, loc=111, xlim=None, ylim=None, 
+    def add_timeseries_plot(self, target=None, loc=111, xlim=None, ylim=None,
                             doLog=False):
         '''
-        
+
         '''
         pass
 
@@ -574,15 +587,15 @@ class BinaryEventTable(object):
 
     def calc_B(self):
         '''
-        Calculate frequency bias, or the ratio of the number of forecasts 
+        Calculate frequency bias, or the ratio of the number of forecasts
         of occurrence to the number of actual occurrences.  Results range
-        from [0,$\inf$]; naive of economic and forecast goals, a value of 1 
+        from [0,$\inf$]; naive of economic and forecast goals, a value of 1
         is desireable.
         This is sometimes referred to as just "bias", though it is not a
         true measure of forecast bias in the traditional sense.
         '''
         return self.calc_r()/self.calc_s()
-        
+
     def calc_ar(self):
         '''
         Calculate and return a$_r$, which is the expected "a" (number of hits)
@@ -592,12 +605,12 @@ class BinaryEventTable(object):
 
     def calc_dr(self):
         '''
-        Calculate and return d$_r$, which is the expected "d" (number of 
+        Calculate and return d$_r$, which is the expected "d" (number of
         true negatives) for a random forecast with the same base and forecast
         rate.
         '''
         return (self['b']+self['d'])*(self['c']+self['d'])/self['n']
-        
+
     def calc_PC(self):
         '''
         Calculate and return Proportion Correct, or, the proportion of
@@ -609,11 +622,11 @@ class BinaryEventTable(object):
     def calc_HR(self):
         '''
         Calculate and return Hit Rate, or the proportion of occurrences that
-        were correctly forecast.  This is also known as probability of 
+        were correctly forecast.  This is also known as probability of
         detection, and is the "hits" divided by "hits"+"misses".
         '''
         from numpy import nan
-        
+
         if self['a']+self['c'] > 0:
             return self['a']/(self['a']+self['c'])
         else:
@@ -622,22 +635,22 @@ class BinaryEventTable(object):
     def calc_FARate(self):
         '''
         Calculate False Alarm Rate, also known as Probability of False
-        Detection (POFD), definded as "False Positives" divided by 
-        "False Positives" plus "True Negatives".  It is the proportion of 
+        Detection (POFD), definded as "False Positives" divided by
+        "False Positives" plus "True Negatives".  It is the proportion of
         the total non-events incorrectly forecasted as events.
         '''
 
         from numpy import nan
-        
+
         if (self['falseP']+self['trueN']) > 0:
             return self['falseP']/(self['falseP']+self['trueN'])
         else:
             return nan
-        
+
     def calc_PCE(self):
         '''
-        Calculate and return the Proportion Correct for a random 
-        forecast.  This value is a baseline, unskilled PC and is the 
+        Calculate and return the Proportion Correct for a random
+        forecast.  This value is a baseline, unskilled PC and is the
         basis for the Heidke Skill Score calculation.
         '''
 
@@ -647,22 +660,21 @@ class BinaryEventTable(object):
             (self['b']+self['d'])/self['n'] * \
             (self['c']+self['d'])/self['n']
 
-
     def calc_heidke(self):
         '''
-        Calculate and return the Heidke Skill Score, a measure of proportion 
+        Calculate and return the Heidke Skill Score, a measure of proportion
         correct adjusted for the number of forecasts that would be correct by
         random chance (i.e., in the absence of skill.)  The value ranges
         from [-1,1], where zero is no skill (the model performs as well as
-        one that relies on random chance), 1 is a perfect forecast.  
+        one that relies on random chance), 1 is a perfect forecast.
         A negative value, or negative "skill", is not worse than a score
         of zero; rather, it implies positive skill if the binary event
         categories were rearranged.
         '''
         from numpy import nan
-        
+
         PC = self.calc_PC()
-        E  = self.calc_PCE()
+        E = self.calc_PCE()
 
         if (1-E) != 0:
             return (PC-E)/(1.-E)
@@ -671,27 +683,27 @@ class BinaryEventTable(object):
 
 
 ###############################################################################
-#TEST SUITE #
+# TEST SUITE #
 ###############################################################################
 class TestBinaryTable(unittest.TestCase):
     '''
-    Test building binary event tables, combining them with others, and 
+    Test building binary event tables, combining them with others, and
     calculating final metrics.
     '''
     import datetime as dt
-    
+
     # Create some time vectors:
 
     start = dt.datetime(2000, 5, 2, 23, 56, 0)
     # UPDATED: LIMITED SCOPE FOR LIST COMP & EXEC WITHIN CLASS DEF
-    #t1 = [start+dt.timedelta(minutes=i) for i in range(8)]
-    #t2 = [t + dt.timedelta(seconds=10)  for t in t1]
-    #t3 = [t + dt.timedelta(minutes=10)for i, t in enumerate(t1)]
+    # t1 = [start+dt.timedelta(minutes=i) for i in range(8)]
+    # t2 = [t + dt.timedelta(seconds=10)  for t in t1]
+    # t3 = [t + dt.timedelta(minutes=10)for i, t in enumerate(t1)]
     t1, t2, t3 = [], [], []
     for i in range(8):
         t1.append(start+dt.timedelta(minutes=i))
-        t2.append(t1[-1]+ dt.timedelta(seconds=10))
-        t3.append(t1[-1]+ dt.timedelta(minutes=10))
+        t2.append(t1[-1] + dt.timedelta(seconds=10))
+        t3.append(t1[-1] + dt.timedelta(minutes=10))
 
     # Artificial data vectors: every category (hit, miss, etc.) is used.
     # This will give us a final binary table where every value is "2".
@@ -702,9 +714,9 @@ class TestBinaryTable(unittest.TestCase):
     d3 = [0, 1, 0, 1, 0, 0, 0, 0]
 
     # Cutoff and time window for tables:
-    cutoff=.5
-    window=dt.timedelta(minutes=1)
-    
+    cutoff = .5
+    window = dt.timedelta(minutes=1)
+
     def testTable(self):
         '''
         Build a table, test results.
@@ -716,13 +728,13 @@ class TestBinaryTable(unittest.TestCase):
         # Test values in table:
         for x in 'ac':
             self.assertEqual(2, tab[x])
-        
+
         # Test metric calculation:
-        self.assertEqual( 0.5, tab.calc_PC() )
-        self.assertEqual( 0.5,  tab.calc_HR() )
-        self.assertEqual( 0.5,  tab.calc_FARate() )
-        self.assertEqual( 0.5,  tab.calc_PCE() )
-        self.assertEqual( 0.0,  tab.calc_heidke() )
+        self.assertEqual(0.5, tab.calc_PC())
+        self.assertEqual(0.5, tab.calc_HR())
+        self.assertEqual(0.5, tab.calc_FARate())
+        self.assertEqual(0.5, tab.calc_PCE())
+        self.assertEqual(0.0, tab.calc_heidke())
 
     def testTableExactTime(self):
         '''
@@ -740,13 +752,13 @@ class TestBinaryTable(unittest.TestCase):
         # Test values in table:
         for x in 'abcd':
             self.assertEqual(2, tab[x])
-        
+
         # Test metric calculation:
-        self.assertEqual( 0.5, tab.calc_PC() )
-        self.assertEqual( 0.5, tab.calc_HR() )
-        self.assertEqual( 0.5, tab.calc_FARate() )
-        self.assertEqual( 0.5, tab.calc_PCE() )
-        self.assertEqual( 0.0, tab.calc_heidke() )
+        self.assertEqual(0.5, tab.calc_PC())
+        self.assertEqual(0.5, tab.calc_HR())
+        self.assertEqual(0.5, tab.calc_FARate())
+        self.assertEqual(0.5, tab.calc_PCE())
+        self.assertEqual(0.0, tab.calc_heidke())
 
     def testTableMetric(self):
         '''
@@ -762,11 +774,11 @@ class TestBinaryTable(unittest.TestCase):
         self.assertEqual(4, tab['d'])
 
         # Test metric calculation:
-        self.assertEqual( 0.75, tab.calc_PC() )
-        self.assertEqual( 0.5,  tab.calc_HR() )
-        self.assertEqual( 0.0,  tab.calc_FARate() )
-        self.assertEqual( 0.5,  tab.calc_PCE() )
-        self.assertEqual( 0.5,  tab.calc_heidke() )
+        self.assertEqual(0.75, tab.calc_PC())
+        self.assertEqual(0.5, tab.calc_HR())
+        self.assertEqual(0.0, tab.calc_FARate())
+        self.assertEqual(0.5, tab.calc_PCE())
+        self.assertEqual(0.5, tab.calc_heidke())
 
     def testTableAddInPlace(self):
         '''
@@ -774,30 +786,30 @@ class TestBinaryTable(unittest.TestCase):
         '''
 
         # Two individual tables.  These are tested individually above.
-        tab1=BinaryEventTable(self.t1, self.d1, self.t2, self.d2,
-                              self.cutoff, self.window)
-        tab2=BinaryEventTable(self.t3, self.d1, self.t3, self.d3,
-                              self.cutoff, self.window)
+        tab1 = BinaryEventTable(self.t1, self.d1, self.t2, self.d2,
+                                self.cutoff, self.window)
+        tab2 = BinaryEventTable(self.t3, self.d1, self.t3, self.d3,
+                                self.cutoff, self.window)
 
         # Combined table (manual):
-        tab3=BinaryEventTable(self.t1+self.t3, 2*self.d1,
-                              self.t2+self.t3, self.d2+self.d3,
-                              self.cutoff, self.window)
+        tab3 = BinaryEventTable(self.t1+self.t3, 2*self.d1,
+                                self.t2+self.t3, self.d2+self.d3,
+                                self.cutoff, self.window)
 
         # Combined table (via sum):
-        tab1+=tab2
-        
+        tab1 += tab2
+
         # Table 3 should be equivalent to tab1+tab2.
         for x in 'abcd':
             self.assertEqual(tab1[x], tab3[x])
-        
+
         self.assertEqual(tab1.calc_PC(),     tab3.calc_PC())
         self.assertEqual(tab1.calc_HR(),     tab3.calc_HR())
         self.assertEqual(tab1.calc_FARate(), tab3.calc_FARate())
         self.assertEqual(tab1.calc_PCE(),    tab3.calc_PCE())
         self.assertEqual(tab1.calc_heidke(), tab3.calc_heidke())
 
-    #def testTableAddOverlap(self):
+    # def testTableAddOverlap(self):
     #    '''
     #    Ensure that adding temporally overlapping tables raises exception.
     #    '''
@@ -806,9 +818,10 @@ class TestBinaryTable(unittest.TestCase):
     #                          self.cutoff, self.window)
     #    tab2=BinaryEventTable(self.t1, self.d1, self.t2, self.d3,
     #                          self.cutoff, self.window)
-    #    
+    #
     #    self.assertRaises(ValueError, tab1.__iadd__, tab2)
-        
-if __name__=='__main__':
-    print( 10*'=' + 'TESTING VALIDATION PACKAGE' + 10*'=')
+
+
+if __name__ == '__main__':
+    print(10*'=' + 'TESTING VALIDATION PACKAGE' + 10*'=')
     unittest.main()
