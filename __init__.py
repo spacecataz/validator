@@ -3,6 +3,7 @@
 A module containing data-model validation tools.
 '''
 
+from re import S
 import unittest
 
 # ------------------- METRICS --------------------------
@@ -368,6 +369,12 @@ class BinaryEventTable(object):
         self.tObs = append(self.tObs, table.tObs)
         self.tMod = append(self.tMod, table.tMod)
 
+        # Combine timeseries:
+        self.time = append(self.time, table.time)
+        self.obsmax = append(self.obsmax, table.obsmax)
+        self.modmax = append(self.modmax, table.modmax)
+        self.bool = append(self.bool, table.bool)
+
         # Combine timings:
         self.nWindow += table.nWindow
         self.trange[0] = min(self.trange[0], table.trange[0])
@@ -468,7 +475,7 @@ class BinaryEventTable(object):
 
         # Create boundaries of time windows.
         time = [winstart+i*window for i in range(int(nTime))]
-        self.time = time + timedelta(seconds=int(dT/2))
+        #self.time = array(time)[:-1] + timedelta(seconds=int(dT/2))
 
         # Store these values in the object.
         self.Obs, self.tObs = Obs, tObs
@@ -478,11 +485,12 @@ class BinaryEventTable(object):
         self.nWindow = nWindow
         self.threshold = cutoff
 
-        # Create timeseries arrays:
-        self.time = zeros(self.nWindow, dtype=object)
-        self.obsmax = zeros(self.nWindow)
-        self.modmax = zeros(self.nWindow)
-        self.bool = zeros(self.nWindow, dtype=bool)
+        # Create timeseries arrays. Initiate as lists as there
+        # may be entries with no data that we will not want to include.
+        self.time = []
+        self.obsmax = []
+        self.modmax = []
+        self.bool = []
 
         # Convert data to binary format: +1 for above or equal to threshold,
         # -1 for below threshold.
@@ -516,9 +524,10 @@ class BinaryEventTable(object):
                 continue
 
             # Store timeseries information:
-            self.obsmax[i] = self.Obs[obs_loc].max()
-            self.modmax[i] = self.Mod[mod_loc].max()
-            self.bool[i] = self.modmax[i] >= cutoff
+            self.time.append(time[i] + timedelta(seconds=int(dT/2)))
+            self.obsmax.append(self.Obs[obs_loc].max())
+            self.modmax.append(self.Mod[mod_loc].max())
+            self.bool.append(self.modmax[-1] >= cutoff)
 
             # Determine contigency result and increment it.
             val = 2*int(subObs.max()) + int(subMod.max())
@@ -529,6 +538,11 @@ class BinaryEventTable(object):
             self.epochs[result[val]].append(time[i])
 
             # print('{} from {} to {}'.format(result[val],time[i], time[i+1]))
+
+        # Convert timeseries into arrays:
+        self.time = array(self.time, dtype=object)
+        self.obsmax, self.modmax = array(self.obsmax), array(self.modmax)
+        self.bool = array(self.bool, dtype=bool)
 
         # For convenience, use the definitions from Jolliffe and Stephenson.
         table['a'], table['b'] = table['hit'],  table['falseP']
@@ -703,7 +717,14 @@ class BinaryEventTable(object):
         else:
             return nan
 
+    def calc_bias(self):
+        '''
+        Calculate the event bias of the forecast. Bias indicates if the model
+        overpredicts (bias>1) or underpredicts (bias<1) the frequency of
+        event (i.e., threshold crossing) occurrence.
+        '''
 
+        return (self['a']+self['b'])/(self['a']+self['c'])
 ###############################################################################
 # TEST SUITE #
 ###############################################################################
