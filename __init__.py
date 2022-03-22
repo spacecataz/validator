@@ -298,8 +298,12 @@ class BinaryEventTable(object):
     ================
     trange : 2-element list-like of datetime objects
        Restricts the start and stop time of binning to the first and
-       last element of *trange*.  Default is to generate the time range
-       of the min and max times of *tMod* and *tObs*.
+       last element of *trange*.  Last element is exclusive, i.e., it defines
+       the end of the last window, not the start of the last window (though
+       this will be adjusted so that there are no fractional windows given
+       the size of *window* and the size of the time range).
+       Default is to generate the time range of the min and max times of
+       *tMod* and *tObs* so that all times are considered
 
     Examples
     ========
@@ -444,6 +448,8 @@ class BinaryEventTable(object):
         # DoInclusive sets if the last window is inclusive/exclusive
         # (i.e., mathematical [start,end] vs. [start,end) behavior.)
         if not trange:
+            trange = [min([tObs.min(), tMod.min()]),
+                      max([tObs.max(), tMod.max()])]
             start = date2num(min([tObs.min(), tMod.min()]))
             end = date2num(max([tObs.max(), tMod.max()]))
             DoInclusive = True
@@ -455,6 +461,9 @@ class BinaryEventTable(object):
             DoInclusive = False
         dT = window.total_seconds()
 
+        # Debug info:
+        # print(f'DEBUG: DoInclusive = {DoInclusive} \n trange={trange}')
+
         # Now, adjust start and end such that they begin on round number
         # times- for example, if the time window is 5 minutes, and the
         # raw start time is 6:02 UT, the first window should start at 6:00UT.
@@ -463,19 +472,30 @@ class BinaryEventTable(object):
         start_offset = timedelta(seconds=round(start*24*3600) % dT)
         end_offset = timedelta(seconds=round(end*24*3600) % dT)
 
+        # Debug info:
+        # print(f'Offsets = {start_offset} and {end_offset}')
+        # print(f'Revised windows = {trange[0]-start_offset} and {trange[1]+end_offset}')
+
         # Generate start and stop time.
         winstart = (num2date(start) - start_offset).replace(tzinfo=None)
-        winend = (num2date(end) - end_offset).replace(tzinfo=None) \
+        winend = (num2date(end) - end_offset).replace(tzinfo=None)  \
             + DoInclusive*window
 
+        # Debug info:
+        # print(f'Window start/end times: {winstart}, {winend}')
+
         # With start and stop times, create window information.
-        nWindow = int(ceil((date2num(winend)-date2num(winstart))
-                           / (dT/3600. / 24.)))
-        nTime = nWindow+1
+        nWindow = int(ceil((winend-winstart).total_seconds() / dT))
+        nTime = nWindow + 1
+
+        # Debug info:
+        # print(f'Total seconds: {(winend-winstart).total_seconds()}')
+        # print(f'Size of window (s) = {dT}')
+        # print(f'Number of windows = {nWindow}')
+
 
         # Create boundaries of time windows.
         time = [winstart+i*window for i in range(int(nTime))]
-        #self.time = array(time)[:-1] + timedelta(seconds=int(dT/2))
 
         # Store these values in the object.
         self.Obs, self.tObs = Obs, tObs
@@ -520,7 +540,7 @@ class BinaryEventTable(object):
 
             # No points?  No metric!
             if not subObs.size*subMod.size:
-                # print('NO RESULT from {} to {}'.format(time[i], time[i+1]))
+                print('NO RESULT from {} to {}'.format(time[i], time[i+1]))
                 continue
 
             # Store timeseries information:
