@@ -75,10 +75,10 @@ def read_mag(filename):
     # Get dt values:
     dt = np.array([x.total_seconds() for x in np.diff(data['time'])])
 
-    # Loop through variables.  Start by 
+    # Loop through variables.  Start by
     data['dBdt'] = np.sqrt( (data['bx'][1:] - data['bx'][:-1])**2 +
                             (data['by'][1:] - data['by'][:-1])**2 ) / dt
-            
+
     return data
 
 class TestBinaryEventTable(unittest.TestCase):
@@ -88,7 +88,7 @@ class TestBinaryEventTable(unittest.TestCase):
     '''
     # For convenience:
     varnames = ['falseP','hit','miss','n','trueN']
-    
+
     #### "Answers" ####
     # Binary event categorization counts:
     knownCount1 = {'falseP': 1,'hit': 3,'miss':5,'n': 12,'trueN': 3}
@@ -99,15 +99,15 @@ class TestBinaryEventTable(unittest.TestCase):
                    'PC':.5, 'HR':.375, 'FARate':.25, 'HSS':.1}
     knownCalcs2 = {'s':.97222,'r':.9444,'B':.971,'ar':66.111,'dr':.111111,
                    'PC':.9722,'HR':.9714,'FARate':0.0, 'HSS':.65384}
-    
+
     def setUp(self):
         '''
-        Pre-test set up work.  If this fails, then there is a 
+        Pre-test set up work.  If this fails, then there is a
         syntax or other fundamental issue with BinaryEventTables.
         '''
         # Pathing information worth hanging on to:
         self.pth = os.path.dirname(os.path.abspath(__file__))
-        
+
         # Create some "dummy data" to produce an artificial test case.
         # Simple time arrays:
         start = dt.datetime(2000,1,1,12,0,0)
@@ -115,13 +115,13 @@ class TestBinaryEventTable(unittest.TestCase):
                           for x in range(15)])
         t_mod = np.array([start + dt.timedelta(minutes=4*x+2)
                           for x in range(15)])
-        
+
         # Simple yes/no data:
         d_obs = np.zeros( t_obs.size )
-        d_mod = np.zeros( t_obs.size )
+        d_mod = np.zeros( t_mod.size )
         d_obs[::2] = 1. # every other one is true.
         d_mod[::4] = 1. # every forth one is true.
-        
+
         # Binary event table for dummy data:
         self.t1 = vd.BinaryEventTable(t_obs, d_obs, t_mod, d_mod, .5, 300)
 
@@ -174,7 +174,7 @@ class TestBinaryEventTable(unittest.TestCase):
     def test_calcHSS(self):
         self.assertAlmostEqual(self.knownCalcs1['HSS'], self.t1.calc_heidke())
         self.assertAlmostEqual(self.knownCalcs2['HSS'], self.t2.calc_heidke(),4)
-        
+
 if __name__=='__main__':
     unittest.main()
 
