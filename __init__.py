@@ -403,7 +403,7 @@ class BinaryEventTable(object):
         return self
 
     def __init__(self, tObs, Obs, tMod, Mod, cutoff, window,
-                 trange=None):
+                 trange=None, verbose=True):
         '''
         Build binary event table from scratch.
         '''
@@ -540,7 +540,8 @@ class BinaryEventTable(object):
 
             # No points?  No metric!
             if not subObs.size*subMod.size:
-                print('NO RESULT from {} to {}'.format(time[i], time[i+1]))
+                if verbose:
+                    print('NO RESULT from {} to {}'.format(time[i], time[i+1]))
                 continue
 
             # Store timeseries information:
