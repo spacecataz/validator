@@ -654,7 +654,7 @@ class BinaryEventTable(object):
         '''
         return (self['a']+self['b'])/self['n']
 
-    def calc_B(self):
+    def calc_bias(self):
         '''
         Calculate frequency bias, or the ratio of the number of forecasts
         of occurrence to the number of actual occurrences.  Results range
@@ -749,15 +749,6 @@ class BinaryEventTable(object):
             return (PC-E)/(1.-E)
         else:
             return nan
-
-    def calc_bias(self):
-        '''
-        Calculate the event bias of the forecast. Bias indicates if the model
-        overpredicts (bias>1) or underpredicts (bias<1) the frequency of
-        event (i.e., threshold crossing) occurrence.
-        '''
-
-        return (self['a']+self['b'])/(self['a']+self['c'])
 
 
 ###############################################################################
