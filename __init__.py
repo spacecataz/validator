@@ -3,7 +3,6 @@
 A module containing data-model validation tools.
 '''
 
-from re import S
 import unittest
 
 # ------------------- METRICS --------------------------
@@ -25,7 +24,7 @@ def bias(o, m):
     assert o.shape == m.shape, 'Input arrays must have same shape!'
     assert o.size == m.size,   'Input arrays must have same size!'
 
-    return nansum( m - o )/m.size
+    return nansum(m - o)/m.size
 
 
 def mse(o, m):
@@ -39,7 +38,7 @@ def mse(o, m):
 
     '''
 
-    from numpy import nansum, sqrt
+    from numpy import nansum
 
     # Check input values.
     assert o.shape == m.shape, 'Input arrays must have same shape!'
@@ -166,8 +165,8 @@ def predicteff(o, m):
     assert (len(o.shape) == 1) and (len(m.shape) == 1), \
         'Input arrays must be vectors!'
 
-    var  = variance(o)
-    peff = 1.0 - mse(o,m)/var
+    var = variance(o)
+    peff = 1.0 - mse(o, m)/var
 
     return peff
 
@@ -191,21 +190,22 @@ def pairtimeseries_linear(time1, data, time2, **kwargs):
     from numpy import bool_
     from numpy.ma import MaskedArray
     from scipy.interpolate import interp1d
-    from matplotlib.dates import date2num, num2date
+    from matplotlib.dates import date2num
 
     # Dates to floats:
-    t1=date2num(time1); t2=date2num(time2)
+    t1 = date2num(time1)
+    t2 = date2num(time2)
 
     # Remove masked values (if given):
     if type(data) == MaskedArray:
         if type(data.mask) != bool_:
-            d =data[~data.mask]
-            t1=t1[~data.mask]
+            d = data[~data.mask]
+            t1 = t1[~data.mask]
         else:
-            d=data
+            d = data
     else:
-        d=data
-    func=interp1d(t1, d, **kwargs)
+        d = data
+    func = interp1d(t1, d, **kwargs)
     return func(t2)
 
 
@@ -291,6 +291,11 @@ class BinaryEventTable(object):
     cutoff : real
        Threshold for value to be counted as an event.
 
+    modelcutoff : real
+       In specific cases, it is illustrative to have the model and observation
+       set use different cutoffs for counting events. This keyword allows
+       for that, but should be used with extreme care.
+
     window : real
        Size of time window in seconds.
 
@@ -358,7 +363,7 @@ class BinaryEventTable(object):
                     type(self), type(table)))
 
         # Only add if window and cutoff are identical.
-        if (self.window != table.window) or (self.threshold !=table.threshold):
+        if (self.window != table.window) or (self.threshold != table.threshold):
             raise ValueError("Threshold and window must be equivalent")
 
         # Ensure no overlapping times: DISABLED.
@@ -403,7 +408,7 @@ class BinaryEventTable(object):
         return self
 
     def __init__(self, tObs, Obs, tMod, Mod, cutoff, window,
-                 trange=None, verbose=True):
+                 trange=None, verbose=True, modelcutoff=None):
         '''
         Build binary event table from scratch.
         '''
@@ -412,8 +417,13 @@ class BinaryEventTable(object):
 
         from numpy import array, ndarray
         from numpy.ma.core import MaskedArray, bool_
-        from numpy import min, max, ceil, where, zeros, logical_not
+        from numpy import min, max, ceil, where, logical_not
         from matplotlib.dates import date2num, num2date
+
+        # If modelcutoff set, cutoff is different for model and data.
+        # Otherwise, keep them the same.
+        if not modelcutoff:
+            modelcutoff = cutoff
 
         # If window not a time delta, assume it is seconds.
         if type(window) is not timedelta:
@@ -474,7 +484,8 @@ class BinaryEventTable(object):
 
         # Debug info:
         # print(f'Offsets = {start_offset} and {end_offset}')
-        # print(f'Revised windows = {trange[0]-start_offset} and {trange[1]+end_offset}')
+        # print(f'Revised windows = {trange[0]-start_offset} \
+        # and {trange[1]+end_offset}')
 
         # Generate start and stop time.
         winstart = (num2date(start) - start_offset).replace(tzinfo=None)
@@ -493,7 +504,6 @@ class BinaryEventTable(object):
         # print(f'Size of window (s) = {dT}')
         # print(f'Number of windows = {nWindow}')
 
-
         # Create boundaries of time windows.
         time = [winstart+i*window for i in range(int(nTime))]
 
@@ -504,6 +514,7 @@ class BinaryEventTable(object):
         self.trange = [winstart, winend]
         self.nWindow = nWindow
         self.threshold = cutoff
+        self.modthreshold = modelcutoff
 
         # Create timeseries arrays. Initiate as lists as there
         # may be entries with no data that we will not want to include.
@@ -519,15 +530,15 @@ class BinaryEventTable(object):
         # A "miss" is 2*Obs+Model=1.
         # A "false positive" is 2*Obs+Model=-1
         Obs = where(Obs >= cutoff, 1, -1)
-        Mod = where(Mod >= cutoff, 1, -1)
+        Mod = where(Mod >= modelcutoff, 1, -1)
 
         # Create an empty table and a dictionary of keys:
-        table = {'hit':0., 'miss':0., 'falseP':0., 'trueN':0., 'n':0.}
-        result = {3:'hit', 1:'miss', -1:'falseP', -3:'trueN'}
+        table = {'hit': 0., 'miss': 0., 'falseP': 0., 'trueN': 0., 'n': 0.}
+        result = {3: 'hit', 1: 'miss', -1: 'falseP', -3: 'trueN'}
 
         # Create dictionary to store epochs for each
         # event type (i.e., the time for each "hit", etc.)
-        self.epochs = {'hit':[], 'miss':[], 'falseP':[], 'trueN':[]}
+        self.epochs = {'hit': [], 'miss': [], 'falseP': [], 'trueN': []}
 
         # Perform binary analysis.
         for i in range(nWindow):
@@ -548,7 +559,7 @@ class BinaryEventTable(object):
             self.time.append(time[i] + timedelta(seconds=int(dT/2)))
             self.obsmax.append(self.Obs[obs_loc].max())
             self.modmax.append(self.Mod[mod_loc].max())
-            self.bool.append(self.modmax[-1] >= cutoff)
+            self.bool.append(self.modmax[-1] >= modelcutoff)
 
             # Determine contigency result and increment it.
             val = 2*int(subObs.max()) + int(subMod.max())
@@ -746,6 +757,8 @@ class BinaryEventTable(object):
         '''
 
         return (self['a']+self['b'])/(self['a']+self['c'])
+
+
 ###############################################################################
 # TEST SUITE #
 ###############################################################################
