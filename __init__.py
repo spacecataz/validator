@@ -363,7 +363,8 @@ class BinaryEventTable(object):
                     type(self), type(table)))
 
         # Only add if window and cutoff are identical.
-        if (self.window != table.window) or (self.threshold != table.threshold):
+        if (self.window != table.window) or \
+           (self.threshold != table.threshold):
             raise ValueError("Threshold and window must be equivalent")
 
         # Ensure no overlapping times: DISABLED.
